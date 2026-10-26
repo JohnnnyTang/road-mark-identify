@@ -3,7 +3,7 @@
 #   uv run roadmark stage1 configs/pipeline/default.yaml configs/local/site.yaml
 
 name: default
-data_root: ${ROADMARK_DATA_ROOT}
+data_root: null          # null -> $ROADMARK_DATA_ROOT if set, else <repo>/data
 crs_epsg: null            # REQUIRED in the local override: projected metric CRS
 seed: 0
 standard: configs/standards/gb5768_3_2009.yaml

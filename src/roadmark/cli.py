@@ -52,18 +52,30 @@ def check_config(configs: list[Path]) -> None:
 
 
 @app.command()
+def init() -> None:
+    """Create the data-root layout (default <repo>/data, or $ROADMARK_DATA_ROOT)."""
+    from roadmark.datalayout import init_data_root
+
+    root = init_data_root()
+    typer.echo(f"data root ready: {root}")
+
+
+@app.command()
+def env() -> None:
+    """Report this machine's environment: data root, GDAL, PyTorch/CUDA/GPU."""
+    from roadmark.device import environment_report
+
+    typer.echo(json.dumps(environment_report(), indent=2))
+
+
+@app.command()
 def synth(out: Path = typer.Option(None, help="Default: <data_root>/synthetic"),
           length: float = 60.0, density: float = 3000.0, seed: int = 0) -> None:
     """Generate the synthetic test scene (local coordinates) into the data root."""
-    import os
-
+    from roadmark.config import default_data_root
     from roadmark.synthetic import SceneParams, generate
 
-    if out is None:
-        root = os.environ.get("ROADMARK_DATA_ROOT")
-        if not root:
-            raise typer.BadParameter("set ROADMARK_DATA_ROOT in .env or pass --out")
-        out = Path(root) / "synthetic"
+    out = out or default_data_root() / "synthetic"
     counts = generate(out, SceneParams(length=length, density=density, seed=seed))
     typer.echo(json.dumps({"written_to": out.name, **counts}))
 

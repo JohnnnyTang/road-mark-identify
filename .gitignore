@@ -5,8 +5,7 @@
 # =====================================================================
 
 # --- local data roots ------------------------------------------------
-/data/*
-!/data/README.md
+/data/
 /runs/
 /outputs/
 /models/
@@ -18,8 +17,7 @@
 /tb_logs/
 
 # site-specific configs (real extents, paths, CRS of the project area)
-/configs/local/*
-!/configs/local/README.md
+/configs/local/
 
 # --- point clouds ----------------------------------------------------
 *.las

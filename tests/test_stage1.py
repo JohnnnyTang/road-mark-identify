@@ -1,14 +1,20 @@
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
 import rasterio
 
-from roadmark.config import IntensityCfg, PipelineConfig, load_pipeline, load_standard
+from roadmark.config import (
+    PROJECT_ROOT,
+    IntensityCfg,
+    PipelineConfig,
+    load_pipeline,
+    load_standard,
+)
 from roadmark.io.pointcloud import iter_chunks, read_header
 from roadmark.io.raster import Grid
 from roadmark.stage1_raster import intensity as I
-from roadmark.stage1_raster.pipeline import run_stage1
 from roadmark.stage1_raster.rasterize import cell_stats
 from roadmark.synthetic import CAR
 
@@ -67,13 +73,16 @@ def test_intensity_model_recovers_truth(synth_root):
     assert m.asphalt_fraction > 0.5
 
 
-def test_stage1_end_to_end(synth_root, monkeypatch):
-    monkeypatch.setenv("ROADMARK_DATA_ROOT", str(synth_root))
+def test_data_root_default(monkeypatch):
+    monkeypatch.delenv("ROADMARK_DATA_ROOT", raising=False)
     cfg = load_pipeline("configs/pipeline/default.yaml", "configs/pipeline/synthetic.yaml")
-    cfg.stage1.raster.pixel_size = 0.05  # keep the test fast
-    cfg.stage1.raster.block_size_px = 300
-    rep = run_stage1(cfg)
-    out = synth_root / "runs" / "synthetic" / "stage1"
+    assert cfg.resolved_data_root() == PROJECT_ROOT / "data"
+    monkeypatch.setenv("ROADMARK_DATA_ROOT", "E:/elsewhere")
+    assert cfg.resolved_data_root() == Path("E:/elsewhere")
+
+
+def test_stage1_end_to_end(stage1_run):
+    rep, out = stage1_run
     assert (out / "manifest.json").exists() and (out / "qa_stage1.json").exists()
     assert rep["grid"]["blocks"] > 1
     assert rep["cross_pass_consistency"]["passed"], rep["cross_pass_consistency"]

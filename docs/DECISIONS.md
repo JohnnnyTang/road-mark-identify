@@ -30,3 +30,21 @@ Consequences:
   Handled explicitly (`identifiable` flag).
 - Sampling no-data: 3.75 pts/px with `coverage_min_points: 2` gives ~11 % false no-data.
   Pixel size and threshold must come from measured density (Roadmap 1.4).
+
+## 2026-10-26  Planning  Parallel tracks, data root, GPU machine
+Decision:
+- Organise the work as six tracks (A data, B specs, C annotation, D downstream, E model,
+  F classical) that meet at milestones M1–M5 through frozen interfaces I1–I8.
+- Annotations are vectors in the project CRS and get rasterized onto any grid (`io/labels.py`), so
+  annotation starts on preview rasters (M1) and survives Stage 1 tuning.
+- Stages 3–7 are developed against `simulate_paint_prob` on the synthetic truth before a model exists.
+- Data root defaults to `<repo>/data` (fully git-ignored, guarded, AI-denied). `ROADMARK_DATA_ROOT`
+  overrides it.
+- Model code runs on a separate NVIDIA GPU machine: extra `seg-cuda` = PyTorch 2.14.1 from the
+  cu130 index (driver ≥ 580, Turing or newer). The cu128 index stops at torch 2.11. The fallback is
+  cu126. `seg-cpu` (same torch version) is for smoke tests.
+Alternatives considered: strictly sequential steps (§12), rejected because annotation and model
+development would idle until Stage 1 is final. Pixel-mask annotation, rejected because it is tied
+to one grid.
+Consequences: data moves CPU ↔ GPU by hand inside the data boundary (DATA_POLICY "Compute
+machines"). GPU driver version to confirm in Step 1.0.

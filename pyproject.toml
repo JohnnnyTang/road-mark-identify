@@ -34,8 +34,13 @@ dependencies = [
 # Ground filtering backend (Cloth Simulation Filter). PDAL is optional and used
 # through its CLI if installed separately (conda / OSGeo4W); it is not a pip dep.
 ground = ["cloth-simulation-filter>=1.1.5"]
-# Stage 2 segmentation. Installed only when we reach Step 4 of the roadmap.
-seg = ["torch>=2.4", "segmentation-models-pytorch>=0.3.4"]
+# Model code (Stage 2 segmentation, glyph CNN). Pick ONE:
+#   GPU machine:  uv sync --extra ground --extra seg-cuda
+#   CPU machine:  uv sync --extra ground --extra seg-cpu    (smoke tests only)
+seg-cuda = ["torch>=2.7", "torchvision>=0.22", "segmentation-models-pytorch>=0.4",
+            "tensorboard>=2.17"]
+seg-cpu = ["torch>=2.7", "torchvision>=0.22", "segmentation-models-pytorch>=0.4",
+           "tensorboard>=2.17"]
 
 [project.scripts]
 roadmark = "roadmark.cli:app"
@@ -47,6 +52,31 @@ dev = [
     "pre-commit>=3.7",
     "nbstripout>=0.7",
 ]
+
+[tool.uv]
+conflicts = [[{ extra = "seg-cuda" }, { extra = "seg-cpu" }]]
+
+# CUDA 13.0 wheels need NVIDIA driver >= 580 and a Turing-or-newer GPU (RTX 20xx+). For an
+# older driver or GPU switch the index to cu126 (driver >= 560), then `uv lock`.
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu130", extra = "seg-cuda" },
+    { index = "pytorch-cpu", extra = "seg-cpu" },
+]
+torchvision = [
+    { index = "pytorch-cu130", extra = "seg-cuda" },
+    { index = "pytorch-cpu", extra = "seg-cpu" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
 
 [build-system]
 requires = ["hatchling>=1.25"]

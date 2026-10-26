@@ -1,8 +1,14 @@
 # CLAUDE.md
 
-Road-marking extraction from point clouds. Design: `docs/handoff.md`. Plan and current step:
-`docs/ROADMAP.md`. Work one roadmap step at a time; a step closes only when its acceptance
-check passes and `docs/DECISIONS.md` has an entry.
+Road-marking extraction from point clouds. Design: `docs/handoff.md`. Plan: `docs/ROADMAP.md`,
+organised as parallel tracks (A data, B specs, C annotation, D downstream, E model, F classical)
+that meet at milestones M1–M5 through the frozen interface contracts I1–I8. Work inside one
+track at a time. Don't change an interface without updating its contract, both sides and their tests.
+A unit of work closes only when its acceptance check passes and `docs/DECISIONS.md` has an entry.
+
+Two machines: this CPU workstation, and an NVIDIA GPU machine for model code (`seg-cuda` extra,
+`device.get_device(require_cuda=True)`). Model code must also run on CPU for synthetic smoke tests.
+Data root: `<repo>/data` unless `ROADMARK_DATA_ROOT` is set.
 
 ## Data protection (hard rules)
 

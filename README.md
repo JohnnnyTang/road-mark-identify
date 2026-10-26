@@ -27,12 +27,17 @@ Design: [docs/handoff.md](docs/handoff.md). Step-by-step plan and status:
 ```powershell
 uv sync --extra ground                       # core + CSF ground filter
 uv run pre-commit install --hook-type pre-commit --hook-type pre-push   # data guard
-copy .env.example .env                       # set ROADMARK_DATA_ROOT (outside the repo)
+uv run roadmark init                         # data root: <repo>/data (git-ignored)
 uv run pytest
 ```
 
-Optional extras: `--extra seg` (PyTorch, for Step 4). PDAL is optional and used through its own
-CLI (conda/OSGeo4W) if needed.
+**GPU machine** (model training/inference): `uv sync --extra ground --extra seg-cuda`
+(PyTorch with CUDA 13.0; needs NVIDIA driver ≥ 580), then check with `uv run roadmark env`.
+`--extra seg-cpu` installs CPU PyTorch for smoke tests elsewhere. Data moves between the
+machines only as described in [DATA_POLICY.md](DATA_POLICY.md#compute-machines).
+
+The data root defaults to `<repo>/data`. Set `ROADMARK_DATA_ROOT` (see `.env.example`) to use
+another disk. PDAL is optional and used through its own CLI (conda/OSGeo4W) if needed.
 
 ## Try it on the synthetic scene
 
@@ -48,7 +53,7 @@ For real data, put site settings (inputs, EPSG, trajectory) in `configs/local/si
 (git-ignored) and run:
 
 ```powershell
-uv run roadmark inspect <data_root>/raw/*.laz
+uv run roadmark inspect data/raw/*.laz
 uv run roadmark stage1 configs/pipeline/default.yaml configs/local/site.yaml
 ```
 

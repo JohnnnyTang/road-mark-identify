@@ -24,8 +24,9 @@ in local coordinates (e.g. 0–100 m).
 
 ## Where data lives
 
-- Outside the repo by preference: set `ROADMARK_DATA_ROOT` in `.env` (see `.env.example`).
-- Otherwise in `./data/`, which is git-ignored.
+- Default: `<repo>/data/`, created by `uv run roadmark init`. The whole folder is git-ignored,
+  blocked by the data guard, and denied to AI assistants. Override with `ROADMARK_DATA_ROOT`
+  (e.g. a bigger disk on the GPU machine).
 - Site-specific configs (real paths, extents, EPSG of the area) go in `configs/local/`
   (git-ignored), e.g. `configs/local/site.yaml`:
 
@@ -43,10 +44,26 @@ Layout under the data root:
 ```
 raw/            delivered point clouds, trajectories (read-only, never modified)
 synthetic/      output of `roadmark synth`
-annotations/    training masks, vector gold standard (Step 2)
+annotations/    vector annotations in the project CRS, gold standard (Step 2)
 runs/<name>/    pipeline outputs per run (stage1/, stage2/, ...), each with manifest.json
-models/         trained weights
+models/         trained weights (GPU machine) and local training logs
+exchange/       bundles copied between the CPU and GPU machines
 ```
+
+## Compute machines
+
+Data may be processed only on machines **inside the data boundary**: owned or controlled by
+the project, not shared or rented cloud instances unless the data owner approves in writing.
+Currently there are two: the CPU workstation (Stage 1, 3, 5–7, annotation) and the NVIDIA GPU
+machine (Stage 2 model, glyph CNN).
+
+- Each machine has its own clone with the hooks installed (`pre-commit install`) and its own
+  data root.
+- Data moves between them **by a person**, over the LAN or on an encrypted removable disk,
+  never through git, chat, e-mail or cloud drives. Only what the next step needs moves
+  (`runs/<name>/stage1/` + `annotations/` to the GPU; `runs/<name>/stage2/` + `models/` back).
+- After copying, check integrity against the input fingerprints in each `manifest.json`.
+- When the work ends, data on the GPU machine is deleted or archived per the data owner's rules.
 
 ## Enforcement layers
 

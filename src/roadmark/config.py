@@ -173,9 +173,18 @@ class Stage1Cfg(_Strict):
     road_mask: RoadMaskCfg = Field(default_factory=RoadMaskCfg)
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # editable install: the repo checkout
+
+
+def default_data_root() -> Path:
+    """``$ROADMARK_DATA_ROOT`` if set, else ``<repo>/data`` (git-ignored, data-guarded)."""
+    env = os.environ.get("ROADMARK_DATA_ROOT")
+    return Path(env) if env else PROJECT_ROOT / "data"
+
+
 class PipelineConfig(_Strict):
     name: str = "default"
-    data_root: str = "${ROADMARK_DATA_ROOT}"
+    data_root: str | None = None  # None -> default_data_root(); relative -> repo root
     crs_epsg: int | None = None  # None only allowed with allow_local_crs (synthetic data)
     allow_local_crs: bool = False
     seed: int = 0
@@ -192,10 +201,13 @@ class PipelineConfig(_Strict):
         return self
 
     def resolved_data_root(self) -> Path:
+        if self.data_root is None:
+            return default_data_root()
         root = os.path.expandvars(self.data_root)
         if "$" in root:
-            raise ValueError(f"data_root '{self.data_root}' not resolved; set it in .env")
-        return Path(root)
+            raise ValueError(f"data_root '{self.data_root}' references an unset variable")
+        p = Path(root)
+        return p if p.is_absolute() else PROJECT_ROOT / p
 
 
 # ---------------------------------------------------------------------------

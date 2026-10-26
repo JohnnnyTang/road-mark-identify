@@ -32,7 +32,7 @@ BLOCKED_DIRS = (
     "data/", "runs/", "outputs/", "models/", "checkpoints/", "scratch/",
     "mlruns/", "lightning_logs/", "wandb/", "tb_logs/", "configs/local/",
 )
-ALLOWED_IN_BLOCKED_DIRS = {"data/README.md", "configs/local/README.md"}
+ALLOWED_IN_BLOCKED_DIRS: set[str] = set()  # nothing under data roots is ever tracked
 
 BLOCKED_EXT = {
     # point clouds / trajectories

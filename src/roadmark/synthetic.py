@@ -110,6 +110,34 @@ def _car_points(p: SceneParams, rng: np.random.Generator) -> dict:
             "cls": np.full(len(x), 1, np.uint8)}
 
 
+def load_truth(path: Path) -> list[tuple[str, Polygon]]:
+    """(label, polygon) pairs from a truth.json written by ``generate``."""
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    return [(m["label"], shapely.from_wkt(m["wkt"])) for m in data["markings"]]
+
+
+def simulate_paint_prob(paint: np.ndarray, coverage: np.ndarray, seed: int = 0,
+                        blur_px: float = 1.0, noise: float = 0.08, dropout: float = 0.02,
+                        false_blobs: int = 20) -> np.ndarray:
+    """Stand-in for a Stage 2 model output, so Stages 3-7 can be built before the model exists.
+
+    Blurred truth + noise + random paint dropouts (wear) + small false-positive blobs.
+    NaN where coverage == 0, exactly like the real contract (``paint_prob.tif``).
+    """
+    from scipy import ndimage
+
+    rng = np.random.default_rng(seed)
+    p = ndimage.gaussian_filter(paint.astype(np.float32), blur_px)
+    drop = ndimage.binary_dilation(rng.random(paint.shape) < dropout / 25, iterations=2)
+    p[drop] *= 0.2
+    for _ in range(false_blobs):
+        r, c = rng.integers(0, paint.shape[0]), rng.integers(0, paint.shape[1])
+        p[r:r + 3, c:c + 3] = np.maximum(p[r:r + 3, c:c + 3], rng.uniform(0.4, 0.9))
+    p = np.clip(p + rng.normal(0, noise, p.shape), 0, 1).astype(np.float32)
+    p[coverage == 0] = np.nan
+    return p
+
+
 def generate(out_dir: Path, p: SceneParams | None = None) -> dict:
     """Write pass_0.laz, pass_1.laz, trajectory.npz and truth.json into ``out_dir``."""
     p = p or SceneParams()
