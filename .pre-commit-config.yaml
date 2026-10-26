@@ -1,0 +1,43 @@
+# Install BOTH stages once per clone:
+#   uv run pre-commit install --hook-type pre-commit --hook-type pre-push
+default_install_hook_types: [pre-commit, pre-push]
+
+repos:
+  - repo: local
+    hooks:
+      # language: python -> pre-commit provides its own interpreter (stdlib-only script)
+      - id: data-guard
+        name: data guard (no point clouds / rasters / vectors / coords)
+        entry: python scripts/check_no_data.py
+        language: python
+        stages: [pre-commit]
+      - id: data-guard-push
+        name: data guard (full tree before push)
+        entry: python scripts/check_no_data.py --all
+        language: python
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+      - id: detect-private-key
+      - id: check-merge-conflict
+      - id: check-yaml
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/kynan/nbstripout
+    rev: 0.9.1
+    hooks:
+      - id: nbstripout
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.2
+    hooks:
+      - id: ruff
+        args: [--fix]

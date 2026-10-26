@@ -1,0 +1,13 @@
+# Override for the synthetic scene (uv run roadmark synth). Local coordinates, no EPSG.
+#   uv run roadmark stage1 configs/pipeline/default.yaml configs/pipeline/synthetic.yaml
+name: synthetic
+allow_local_crs: true
+stage1:
+  inputs: ["synthetic/pass_*.laz"]
+  trajectory:
+    path: synthetic/trajectory.npz
+  raster:
+    block_size_px: 1200   # several blocks even on the small scene, to exercise stitching
+    halo_m: 2.0
+  road_mask:
+    min_road_area_m2: 20.0

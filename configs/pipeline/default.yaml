@@ -1,0 +1,43 @@
+# Base pipeline configuration. Real-site values (inputs, EPSG, trajectory) go in an override
+# under configs/local/ (git-ignored), applied after this file:
+#   uv run roadmark stage1 configs/pipeline/default.yaml configs/local/site.yaml
+
+name: default
+data_root: ${ROADMARK_DATA_ROOT}
+crs_epsg: null            # REQUIRED in the local override: projected metric CRS
+seed: 0
+standard: configs/standards/gb5768_3_2009.yaml
+
+stage1:
+  inputs: []              # e.g. ["raw/*.laz"], relative to data_root
+  pass_id_field: point_source_id
+  chunk_points: 5000000
+
+  ground:
+    method: existing      # existing | csf | grid_min   (Step 1.2 decides)
+    ground_classes: [2]
+    dem_cell: 0.25
+    low_nonground_max_hag: 0.30
+
+  trajectory:
+    path: null            # npz/csv with t,x,y,z relative to data_root
+    time_offset: 0.0
+
+  intensity:
+    enabled: true
+    r_ref: 10.0
+    trim_mad_k: 2.5       # asphalt = residual within k*MAD (iterated)
+    per_pass_match: true
+    consistency_tol: 0.10
+
+  raster:
+    pixel_size: 0.025     # 2-3 cm target (§3); Step 1.4 checks density supports it
+    coverage_min_points: 2
+    block_size_px: 4000
+    halo_m: 10.0
+
+  road_mask:
+    curb_step_min: 0.08
+    curb_step_max: 0.25
+    step_window_m: 0.30
+    min_road_area_m2: 50.0

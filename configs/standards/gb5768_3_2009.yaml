@@ -1,0 +1,59 @@
+# Marking standard parameters (handoff §11.2).
+#
+# DRAFT: values are pre-filled from commonly cited GB 5768.3-2009 dimensions so the pipeline
+# can run. They are NOT verified. Before production (Roadmap Step 1.0), check every value
+# against the standard edition that applies to the project area, add the missing patterns,
+# then set `verified: true`. Record the clause number next to each value.
+#
+# Only dimensional parameters belong here; never paste the standard's text.
+
+standard: "GB 5768.3"
+edition: "2009"
+verified: false
+units: metres
+
+line:
+  width:          {nominal: 0.15, tol: 0.03}   # TODO verify clause; 0.10/0.15 common, edge 0.15-0.20
+  widths_allowed: [0.10, 0.15, 0.20]
+  wear_gap_max:   0.30                          # project choice, not from the standard
+  double_spacing: {min: 0.10, max: 0.30}        # gap between the two lines; TODO verify
+
+dashed_patterns:                                # one entry per pattern in the standard
+  - {name: lane_lt60kmh,  dash: 2.0, gap: 4.0, tol: 0.30}   # TODO verify
+  - {name: lane_ge60kmh,  dash: 6.0, gap: 9.0, tol: 0.50}   # TODO verify
+  # TODO add: intersection guide lines, dashed edge lines, deceleration / variable lane,
+  #           any local (city) deviations observed in the data
+
+crosswalk:
+  bar_width:      {nominal: 0.45, tol: 0.05}   # TODO verify (0.40 / 0.45)
+  bar_gap:        {nominal: 0.60, tol: 0.10}   # TODO verify
+  bar_length_min: 3.0                           # TODO verify
+  min_bars:       4                             # project choice
+
+stop_line:
+  width:          {min: 0.20, max: 0.40}        # TODO verify
+
+symbols:
+  classes:                                      # TODO freeze with the class list (§1.3, Step 2)
+    - arrow_straight
+    - arrow_left
+    - arrow_right
+    - arrow_straight_left
+    - arrow_straight_right
+    - arrow_u_turn
+    - arrow_left_u_turn
+    - arrow_merge_left
+    - arrow_merge_right
+    - diamond_crosswalk_ahead
+    - text
+    - other
+
+geometry:
+  max_curvature_road:  0.10                     # 1/m (R >= 10 m); project choice, tune on data
+  max_curvature_guide: 0.20                     # 1/m (R >= 5 m) in intersection cores
+
+thresholds:                                     # set on validation data, not by hand
+  paint_t_high: null
+  paint_t_low:  null
+  c_accept:     null
+  c_reject:     null

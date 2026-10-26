@@ -1,0 +1,1 @@
+"""Road marking extraction pipeline."""

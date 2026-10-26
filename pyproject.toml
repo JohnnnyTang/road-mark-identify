@@ -1,0 +1,72 @@
+[project]
+name = "roadmark"
+version = "0.1.0"
+description = "Road marking extraction from point-cloud rasters: paint segmentation, element extraction and typed vector assembly."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.12,<3.13"
+authors = [{ name = "JohnnnyTang" }]
+dependencies = [
+    # point cloud I/O (lazrs = LAZ backend, pure wheels on Windows)
+    "laspy[lazrs]>=2.5",
+    # rasters / CRS
+    "rasterio>=1.4",
+    "pyproj>=3.6",
+    # numerics
+    "numpy>=1.26,<3",
+    "scipy>=1.13",
+    "scikit-image>=0.24",
+    # vectors
+    "shapely>=2.0",
+    "geopandas>=1.0",
+    "pyogrio>=0.9",
+    # assembly / profiles
+    "networkx>=3.3",
+    "ruptures>=1.1.9",
+    # config / CLI
+    "pydantic>=2.7",
+    "pyyaml>=6.0",
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+# Ground filtering backend (Cloth Simulation Filter). PDAL is optional and used
+# through its CLI if installed separately (conda / OSGeo4W); it is not a pip dep.
+ground = ["cloth-simulation-filter>=1.1.5"]
+# Stage 2 segmentation. Installed only when we reach Step 4 of the roadmap.
+seg = ["torch>=2.4", "segmentation-models-pytorch>=0.3.4"]
+
+[project.scripts]
+roadmark = "roadmark.cli:app"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2",
+    "ruff>=0.6",
+    "pre-commit>=3.7",
+    "nbstripout>=0.7",
+]
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/roadmark"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "NPY", "SIM"]
+ignore = ["SIM105"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

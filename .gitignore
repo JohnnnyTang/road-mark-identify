@@ -1,0 +1,129 @@
+# =====================================================================
+#  DATA NEVER ENTERS GIT.  See DATA_POLICY.md.
+#  This file is the first line of defence; scripts/check_no_data.py
+#  (pre-commit + pre-push + CI) is the second.  Never use `git add -f`.
+# =====================================================================
+
+# --- local data roots ------------------------------------------------
+/data/*
+!/data/README.md
+/runs/
+/outputs/
+/models/
+/checkpoints/
+/scratch/
+/mlruns/
+/lightning_logs/
+/wandb/
+/tb_logs/
+
+# site-specific configs (real extents, paths, CRS of the project area)
+/configs/local/*
+!/configs/local/README.md
+
+# --- point clouds ----------------------------------------------------
+*.las
+*.laz
+*.copc.laz
+*.e57
+*.ply
+*.pcd
+*.pts
+*.ptx
+*.xyz
+*.rcp
+*.rcs
+*.lasd
+*.sbet
+*.trj
+*.traj
+
+# --- rasters / imagery -----------------------------------------------
+*.tif
+*.tiff
+*.vrt
+*.img
+*.jp2
+*.ecw
+*.sid
+*.asc
+*.nc
+*.ovr
+*.aux.xml
+*.tfw
+*.jgw
+*.pgw
+
+# --- vectors ---------------------------------------------------------
+*.gpkg
+*.gpkg-*
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.qix
+*.sbn
+*.sbx
+*.geojson
+*.geojsonl
+*.kml
+*.kmz
+*.gml
+*.dxf
+*.dwg
+*.fgb
+*.osm
+*.pbf
+*.sqlite
+*.db
+*.parquet
+*.geoparquet
+*.qgz
+*.qgs~
+
+# --- arrays / models / caches ----------------------------------------
+*.npy
+*.npz
+*.h5
+*.hdf5
+*.zarr/
+*.pkl
+*.pickle
+*.joblib
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+*.memmap
+*.dat
+
+# --- archives (common way data sneaks in) -----------------------------
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tgz
+
+# --- secrets / local env ---------------------------------------------
+.env
+.env.*
+!.env.example
+.claude/settings.local.json
+
+# --- python / tooling ------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+build/
+dist/
+.ipynb_checkpoints/
+.vscode/
+.idea/
+*.log
