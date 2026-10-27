@@ -83,7 +83,7 @@ annotation sessions, training runs) with D, E or F work on synthetic data.
 
 | # | Contract | Producer → consumer | Defined in |
 |---|---|---|---|
-| I1 | Channel rasters: names, dtypes, NaN/0 no-data semantics, one snapped grid, COG | A → C, D, E, F | `stage1_raster/rasterize.py::CHANNELS`, `io/raster.py::Grid` |
+| I1 | Channel rasters: names, dtypes, NaN/0 no-data semantics, one snapped grid, COG. Produced by Stage 1 or by the raster adapter (1.8). The adapter writes channels it can't recover as all-NaN and records each channel's meaning in `manifest.json → channels` | A → C, D, E, F | `stage1_raster/rasterize.py::CHANNELS`, `io/raster.py::Grid` |
 | I2 | `paint_prob.tif`: float32 in [0, 1], **NaN where coverage = 0**, same grid as I1; optional `paint_class.tif` uint8 (aux classes §5.1) | E, F → D | this table; `synthetic.simulate_paint_prob` is the reference fake |
 | I3 | Annotations are **vectors in the project CRS** (GeoPackage in `<data_root>/annotations/`): `paint` polygons with class, `ignore` polygons, `split_area` polygons (train/val/test); the gold standard uses the §8.2 schema | B, C → E, F, D, eval | `io/labels.py` (rasterize on any grid), `stage5_vector/schema.py` |
 | I4 | Paint elements | D internal | `stage3_elements/elements.py::PaintElement` |
@@ -257,7 +257,9 @@ primary input (DECISIONS 2026-10-26, Step 1.8).
 - [x] Raster inventory and cross-check: grid, no-data encoding, registration with the points
       (`roadmark raster-inventory`, `roadmark crosscheck`).
 - [ ] Adapter raster tiles → I1 channels: half-pixel origin fix, overlap mosaic, NaN no-data,
-      manifest. **This reaches M1.**
+      manifest. **This reaches M1.** Code done and exact on synthetic tiles
+      (`roadmark adapt-rasters`, `stage1_raster/raster_adapter.py`). Pilot `pilot_a` (2 × 2
+      tiles) has run and its overlaps are identical (DECISIONS). Still open: visual check in QGIS.
 - [ ] Pixel size: 3 cm vs 6 cm aggregation by the sampling no-data rate (1.4).
 - [x] Channel semantics, inferred (`roadmark probe-channels`): density = 5.1 × count (sat. 50),
       intensity = per-pixel max × 255/45 (sat. 45), height not usable (DECISIONS 2026-10-26).

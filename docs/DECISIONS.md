@@ -162,3 +162,49 @@ Consequences:
   count, or done after aggregation to a near-uniform count.
 - Point intensities above 45 saturate at 255 (ground p99.9 = 33, so this is rare and mostly
   retroreflective paint).
+
+## 2026-10-26  Step 1.8  Raster adapter: delivered tiles → I1 channels (code; real run pending)
+Decision (`roadmark adapt-rasters`, `stage1_raster/raster_adapter.py`):
+- Grid: world-file origin + (½, −½) px (`corner_world_file`). Each tile must then sit on one
+  integer pixel lattice, otherwise the run stops (no silent rounding). The output grid is the
+  bounding box of the selected tiles, snapped to the aggregation factor.
+- Decoding with lookup tables from the inferred encodings: count = rint(v / 5.1) capped at 50,
+  `int_max` = rint(v · 45 / 255) in 8-bit point-intensity units (exact for integer
+  intensities ≤ 45). density = 0 ⇒ `int_max` NaN. Not range/incidence corrected.
+- Overlaps: each pixel comes from the covering tile whose centre is nearest (ties: first tile
+  by name). On the regular 300 m lattice this is each tile's 300 m core; a tile's margin is
+  used only where no neighbour exists. Before mosaicking, each overlapping pair is compared
+  (density equal, intensity equal, owner empty while the other is occupied), with totals and
+  the worst pair in `qa_adapter.json`.
+- `coverage_min_points` = 1 for the delivery (≈ 1 point per 3 cm pixel, and one point is
+  evidence). `int_mean`, `int_p90`, `hag_max`, `ground_z` are written all-NaN, so the I1 file
+  set is complete and the missing evidence reads as no data, never zero. The manifest's
+  `channels` field records each channel's meaning.
+- Optional k × k aggregation (count = sum, `int_max` = max) for the 3 vs 6 cm decision.
+- A single mosaic per channel, capped by `max_grid_mpx` (default 1500 Mpx): select pilot
+  tiles by glob. TODO(scale): per-tile COGs + VRT for the full area.
+Alternatives considered: first-valid / fill-from-neighbour overlap rules. Rejected until the
+overlap report shows a need, because mixing tiles inside one pixel neighbourhood hides
+disagreements.
+Evidence: synthetic delivery (`tests/test_raster_adapter.py`): 0.1 m pixels, 12 m tiles every
+10 m, one tile missing, every tile's non-owned part corrupted. Density, `int_max` and coverage
+match the truth exactly at native resolution and after 2 × 2 aggregation; the overlap report
+detects the corruption (intensity-equal < 1, density-equal = 1).
+Real pilot (run `pilot_a`, `roadmark adapt-rasters --pick 2`): the 2 × 2 group of neighbouring
+tiles with the most occupied pixels. Tile names are in `runs/pilot_a/pilot_tiles.json` only.
+The picker considered 102 complete groups. This group has 2.45 × the occupied pixels of the
+median group, and its tiles rank 1, 2, 25 and 68 of 193 by occupancy.
+- Grid 20 800 × 20 800 px at 3 cm (433 Mpx), 4 tiles.
+- Overlaps: 6 pairs, 3 of which contain points (the other 3 overlaps are empty). On all
+  2.56 M occupied overlap pixels, every overlap is **identical**: both occupied = 1.0,
+  density equal = 1.0, intensity equal = 1.0, owner empty while the other is occupied = 0.0,
+  including in the worst pair. The tiles look like cuts from one mosaic, so the ownership rule
+  doesn't change any value.
+- Coverage: 16.2 % of the grid occupied. Points per occupied pixel: p25 = p50 = 1, p75 = 2,
+  p95 = 4. Single-point pixels make up 59.9 % (the 60 % found by the probe). Density saturated
+  on 0.01 %, intensity on 0.31 %.
+- Fixed in the process: pairs whose overlap has no points were scored 0 in `worst_pair`.
+  They are now left out (`pairs_with_points`).
+Follow-ups: look at the pilot in QGIS (`runs/pilot_a/stage1/*.tif`) to close the 1.8 adapter
+item and reach M1. Track F's classical score is written against
+`int_mean`, which this delivery lacks: switch it to `int_max`, conditioned on count.

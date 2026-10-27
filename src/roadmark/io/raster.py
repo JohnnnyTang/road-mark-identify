@@ -65,15 +65,21 @@ class Grid:
         return row, col, ok
 
 
-def create_tiled(path: Path, grid: Grid, dtype: str, nodata: float | None, crs, description: str
-                 ) -> None:
-    """Create an empty tiled GeoTIFF that blocks are written into with windowed writes."""
+def create_tiled(path: Path, grid: Grid, dtype: str, nodata: float | None, crs, description: str,
+                 sparse: bool = False) -> None:
+    """Create an empty tiled GeoTIFF that blocks are written into with windowed writes.
+
+    ``sparse``: unwritten blocks are not stored and read back as ``nodata`` (0 if None), so
+    a mostly empty mosaic costs nothing for the empty part.
+    """
     profile = dict(driver="GTiff", width=grid.width, height=grid.height, count=1, dtype=dtype,
                    crs=crs, transform=grid.transform, nodata=nodata, tiled=True, blockxsize=512,
                    blockysize=512, compress="DEFLATE", BIGTIFF="IF_SAFER")
+    if sparse:
+        profile["SPARSE_OK"] = "TRUE"
     with rasterio.open(path, "w", **profile) as dst:
         dst.set_band_description(1, description)
-        if nodata is not None:  # initialise to nodata so unwritten areas are not zero
+        if nodata is not None and not sparse:  # initialise so unwritten areas are not zero
             fill = np.full((512, 512), nodata, dtype=dtype)
             for _, win in dst.block_windows(1):
                 dst.write(fill[: win.height, : win.width], 1, window=win)

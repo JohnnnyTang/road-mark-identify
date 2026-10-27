@@ -122,6 +122,41 @@ def probe_channels(channels: list[str] = typer.Argument(
     typer.echo(json.dumps(rep, indent=2))
 
 
+@app.command()
+def adapt_rasters(channels: list[str] = typer.Argument(
+                      ..., help="density=GLOB intensity=GLOB (raster tiles); repeat to add globs"),
+                  name: str = typer.Option(..., help="Run name: writes runs/<name>/stage1/"),
+                  aggregate: int = typer.Option(1, help="k x k aggregation: count sum, max"),
+                  coverage_min_points: int = 1, max_grid_mpx: float = 1500.0,
+                  pick: int = typer.Option(
+                      0, help="Pilot: use only the k x k neighbouring tiles with the most "
+                              "occupied pixels (names go to runs/<name>/pilot_tiles.json)"),
+                  workers: int = 4) -> None:
+    """Delivered raster tiles -> I1 channel COGs (Roadmap 1.8): grid fix, decode, mosaic."""
+    from roadmark.config import default_data_root
+    from roadmark.provenance import write_manifest
+    from roadmark.stage1_raster.raster_adapter import AdapterCfg, _glob, pick_pilot, run_adapter
+
+    spec = _group_spec(channels)
+    root = default_data_root()
+    tiles, picked = None, None
+    if pick:
+        tiles, picked = pick_pilot(_glob(root, spec.get("density", [])), pick, workers)
+        (root / "runs" / name).mkdir(parents=True, exist_ok=True)
+        (root / "runs" / name / "pilot_tiles.json").write_text(
+            json.dumps({"tiles": tiles, **picked}, indent=2), encoding="utf-8")
+    cfg = AdapterCfg(channels=spec, aggregate=aggregate, tiles=tiles,
+                     coverage_min_points=coverage_min_points, max_grid_mpx=max_grid_mpx)
+    out = root / "runs" / name / "stage1"
+    rep, files = run_adapter(cfg, root, out)
+    rep["pilot_pick"] = picked
+    (out / "qa_adapter.json").write_text(json.dumps(rep, indent=2), encoding="utf-8")
+    write_manifest(out, cfg, files, {"stage": "adapt_rasters", "channels": rep["channels"]})
+    # The manifest config holds the tile names; the console shows counts only.
+    typer.echo(json.dumps({k: rep[k] for k in ("pilot_pick", "grid", "tiles", "overlaps",
+                                               "coverage")}, indent=2))
+
+
 def _group_spec(groups: list[str]) -> dict[str, list[str]]:
     spec: dict[str, list[str]] = {}
     for g in groups:
