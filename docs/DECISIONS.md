@@ -211,3 +211,35 @@ median group, and its tiles rank 1, 2, 25 and 68 of 193 by occupancy.
 Follow-ups: Track C can start annotating on `pilot_a` (vectors, I3); Track F can run on real
 data. Track F's classical score is written against `int_mean`, which this delivery lacks:
 switch it to `int_max`, conditioned on count. Open in 1.8: the 3 vs 6 cm pixel size.
+
+## 2026-10-26  Step 2 (Track C intake)  Delivered annotation vectors: inventory
+Decision: the delivered vectors under `annotations/` (7 shapefiles) can be used, but only after
+conversion. They are an HD-map-style product (centrelines, boxes, type codes), not I3 paint
+polygons. New redacted tool `roadmark vector-inventory` (`io/vector_inventory.py`). Files and
+layers are reported by index; the index → name map is kept in the data root only.
+Evidence (run `annot_check`, registration on `pilot_a`):
+- Frame: every layer lies 100 % on the delivered tiles, in the same local metre frame. Two
+  `.prj` files claim geographic degrees, which is wrong: the coordinates are metres. Loaders
+  must ignore the CRS. #1 and #5 have identical geometry (same hash); #5 has the finer
+  `MARKTYPE`.
+- #5 lane lines (5 569, 393 km): `MARKTYPE` 3 is solid paint (peak at 0 cm, 2.6 × edge,
+  15 cm at half peak; bright on the line 0.62 vs 0.23 beside). `MARKTYPE` 1 shows no median
+  peak, but bright on the line is 0.32 vs 0.01 beside, which fits a dashed line drawn through
+  its gaps (to be confirmed). `MARKTYPE` 4 has two peaks at ±0.25 m (a double line drawn as
+  one centreline). `MARKTYPE` 7 (`HEIGHT` 15) and 8 (`HEIGHT` 95) are not paint: probably
+  curbs and barriers.
+- #7 lines (300, `TYPE` 1, ~6 m): solid paint, 30 cm wide, bright on the line 0.86 vs 0.03
+  beside. Probably stop lines.
+- #3 two-point lines (2 290, ~6 m) and #4 rotated rectangles (2 589, 5.8 × 1.2 m), both with
+  `TURN_TYPE`: arrow axes and arrow boxes. `TURN_TYPE` 5 and 6 peak at +0.48 / −0.42 m, mirror
+  images, so the line direction is consistent and the heading is recoverable.
+- #2 polygons (523, 11.5 × 4.5 m, no attributes) and #6 (119, 3.7 × 0.5 m, non-rectangular):
+  meaning unknown. Weak contrast.
+Consequences / follow-ups:
+- Need the code lists (`MARKTYPE`, `TYPE`, `TURN_TYPE`), the meaning of #2 and #6, and
+  whether the annotation is complete (every marking in the area). An incomplete annotation
+  must not be used as background.
+- Conversion to I3: solid and stop lines are buffered by their measured width. Dashed lines
+  are split into dashes by intensity, or kept as `ignore` corridors. Arrow boxes become glyph
+  training crops (type + heading) and `ignore` for segmentation. Curbs become road-mask and
+  curb evidence, which the delivery otherwise lacks (no usable height channel).

@@ -157,6 +157,32 @@ def adapt_rasters(channels: list[str] = typer.Argument(
                                                "coverage")}, indent=2))
 
 
+@app.command()
+def vector_inventory(paths: list[str] = typer.Argument(
+                         ..., help="Globs of vector files relative to the data root (** ok)"),
+                     name: str = typer.Option(..., help="Run name: writes runs/<name>/inventory/"),
+                     tiles: list[str] = typer.Option([], help="Raster tile globs (footprint)"),
+                     grid: str = typer.Option(None, help="Stage 1 folder for registration, "
+                                                         "e.g. runs/pilot_a/stage1"),
+                     group_by: list[str] = typer.Option(
+                         [], help="Code field(s): line profile per value (repeatable)")) -> None:
+    """Annotation vectors (I3 intake): schema, sizes, and registration with the rasters."""
+    from roadmark.config import default_data_root
+    from roadmark.io.vector_inventory import VectorInventoryCfg, run_vector_inventory
+    from roadmark.provenance import write_manifest
+
+    cfg = VectorInventoryCfg(paths=paths, tiles=tiles, grid=grid, group_by=group_by)
+    root = default_data_root()
+    rep, names, files = run_vector_inventory(cfg, root)
+    out = root / "runs" / name / "inventory"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "vector_inventory.json").write_text(json.dumps(rep, indent=2), encoding="utf-8")
+    (out / "vector_names.json").write_text(json.dumps(names, indent=2, ensure_ascii=False),
+                                           encoding="utf-8")
+    write_manifest(out / "vector_inventory", cfg, files, {"stage": "vector_inventory"})
+    typer.echo(json.dumps(rep, indent=2, ensure_ascii=False))
+
+
 def _group_spec(groups: list[str]) -> dict[str, list[str]]:
     spec: dict[str, list[str]] = {}
     for g in groups:
