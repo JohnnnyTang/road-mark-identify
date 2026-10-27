@@ -183,12 +183,17 @@ Record decisions in `docs/DECISIONS.md`. Values that reveal the project stay in 
 
 ### 1.1 Data intake and inventory
 
-- [ ] Copy deliveries to `<data_root>/raw/` and make them read-only.
-- [ ] `uv run roadmark inspect data/raw/*.laz` → inventory (redacted: counts, density, extent
+- [x] Copy deliveries to `<data_root>/raw/` and make them read-only.
+- [x] `uv run roadmark inspect data/raw/*.laz` → inventory (redacted: counts, density, extent
       size, EPSG, attributes).
-- [ ] Extend `inspect`: pass-ID histogram, GPS-time range per pass, classification histogram,
-      intensity percentiles (TODO in `io/pointcloud.py`).
+- [x] Extend `inspect`: pass-ID histogram, GPS-time range per pass, classification histogram,
+      intensity percentiles. Done as `roadmark inventory NAME=GLOB ... --name <run>`
+      (`io/inventory.py`).
 - [ ] Check CRS consistency; reproject upstream if needed, never inside the pipeline.
+      (First delivery has no CRS in its headers.)
+- [x] The point delivery (`thin_result`) is thinned to ~16 pts/m² on the ground, with no passes
+      or GPS time, and no originals exist. It is the 3D reference only (DECISIONS 2026-10-26).
+- [x] No CRS will ever be known: work in the delivered local grid (`allow_local_crs: true`).
 
 ### 1.2 Ground filtering (§4.1)
 
@@ -245,6 +250,17 @@ from Poisson sampling alone. Choose from the measured density:
       the vectors on the final grid.
 
 ### 1.8 Only pre-flattened rasters available? (§4.6)
+
+**This is the project's case.** The delivered 3 cm raster tiles (`raw/raster_grid_g/`) are the
+primary input (DECISIONS 2026-10-26, Step 1.8).
+
+- [x] Raster inventory and cross-check: grid, no-data encoding, registration with the points
+      (`roadmark raster-inventory`, `roadmark crosscheck`).
+- [ ] Adapter raster tiles → I1 channels: half-pixel origin fix, overlap mosaic, NaN no-data,
+      manifest. **This reaches M1.**
+- [ ] Pixel size: 3 cm vs 6 cm aggregation by the sampling no-data rate (1.4).
+- [x] Channel semantics, inferred (`roadmark probe-channels`): density = 5.1 × count (sat. 50),
+      intensity = per-pixel max × 255/45 (sat. 45), height not usable (DECISIONS 2026-10-26).
 
 - [ ] No reliable density: treat all dash gaps as lower-confidence evidence and expect a higher
       review rate. Measure the brightness consistency of known markings. Keep pushing for the point cloud.

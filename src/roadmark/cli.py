@@ -39,6 +39,98 @@ def inspect(files: list[Path],
 
 
 @app.command()
+def inventory(groups: list[str] = typer.Argument(
+                  ..., help="NAME=GLOB (relative to the data root); repeat NAME to add globs"),
+              name: str = typer.Option(..., help="Run name: writes runs/<name>/inventory/"),
+              cell: float = 1.0, workers: int = 4) -> None:
+    """Delivery inventory (Roadmap 1.1): per-group counts, classes, passes, density, intensity."""
+    from roadmark.config import default_data_root
+    from roadmark.io.inventory import InventoryCfg, run_inventory
+    from roadmark.provenance import write_manifest
+
+    cfg = InventoryCfg(groups=_group_spec(groups), cell=cell, workers=workers)
+    root = default_data_root()
+    rep, files = run_inventory(cfg, root)
+    out = root / "runs" / name / "inventory"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "inventory.json").write_text(json.dumps(rep, indent=2), encoding="utf-8")
+    write_manifest(out, cfg, files, {"stage": "inventory"})
+    typer.echo(json.dumps({"groups": rep["groups"], "tiles": rep["tiles"]}, indent=2))
+
+
+@app.command()
+def raster_inventory(groups: list[str] = typer.Argument(
+                         ..., help="NAME=GLOB relative to the data root; repeat NAME to add"),
+                     name: str = typer.Option(..., help="Run name: writes runs/<name>/inventory/"),
+                     workers: int = 4
+                     ) -> None:
+    """Delivered raster tiles (Roadmap 1.8): grid, dtype, no-data encoding, value percentiles."""
+    from roadmark.config import default_data_root
+    from roadmark.io.raster_inventory import RasterInventoryCfg, run_raster_inventory
+    from roadmark.provenance import write_manifest
+
+    cfg = RasterInventoryCfg(groups=_group_spec(groups), workers=workers)
+    root = default_data_root()
+    rep, files = run_raster_inventory(cfg, root)
+    out = root / "runs" / name / "inventory"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "raster_inventory.json").write_text(json.dumps(rep, indent=2), encoding="utf-8")
+    write_manifest(out, cfg, files, {"stage": "raster_inventory"})
+    typer.echo(json.dumps({"groups": rep["groups"], "cross_group": rep["cross_group"]}, indent=2))
+
+
+@app.command()
+def crosscheck(channels: list[str] = typer.Argument(..., help="CHANNEL=GLOB of raster tiles"),
+               points: list[str] = typer.Option([], help="Ground point globs (repeatable)"),
+               name: str = typer.Option(..., help="Run name: writes runs/<name>/inventory/"),
+               n_tiles: int = 12, workers: int = 3) -> None:
+    """Raster tiles vs each other and vs the ground points: no-data encoding, registration."""
+    from roadmark.config import default_data_root
+    from roadmark.io.crosscheck import CrosscheckCfg, run_crosscheck
+    from roadmark.provenance import write_manifest
+
+    spec = {k: v[0] for k, v in _group_spec(channels).items()}
+    cfg = CrosscheckCfg(channels=spec, points=points, n_tiles=n_tiles, workers=workers)
+    root = default_data_root()
+    rep, files = run_crosscheck(cfg, root)
+    out = root / "runs" / name / "inventory"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "crosscheck.json").write_text(json.dumps(rep, indent=2), encoding="utf-8")
+    write_manifest(out / "crosscheck", cfg, files, {"stage": "crosscheck"})
+    typer.echo(json.dumps(rep, indent=2))
+
+
+@app.command()
+def probe_channels(channels: list[str] = typer.Argument(
+                       ..., help="density=GLOB intensity=GLOB height=GLOB (raster tiles)"),
+                   points: list[str] = typer.Option([], help="Ground point globs (repeatable)"),
+                   name: str = typer.Option(..., help="Run name: writes runs/<name>/inventory/"),
+                   n_tiles: int = 4, workers: int = 2) -> None:
+    """Infer channel encodings: density units, intensity max/mean and scale, height meaning."""
+    from roadmark.config import default_data_root
+    from roadmark.io.channel_probe import ProbeCfg, run_probe
+    from roadmark.provenance import write_manifest
+
+    spec = {k: v[0] for k, v in _group_spec(channels).items()}
+    cfg = ProbeCfg(channels=spec, points=points, n_tiles=n_tiles, workers=workers)
+    root = default_data_root()
+    rep, files = run_probe(cfg, root)
+    out = root / "runs" / name / "inventory"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "channel_probe.json").write_text(json.dumps(rep, indent=2), encoding="utf-8")
+    write_manifest(out / "channel_probe", cfg, files, {"stage": "probe_channels"})
+    typer.echo(json.dumps(rep, indent=2))
+
+
+def _group_spec(groups: list[str]) -> dict[str, list[str]]:
+    spec: dict[str, list[str]] = {}
+    for g in groups:
+        key, _, pat = g.rpartition("=")
+        spec.setdefault(key or "all", []).append(pat)
+    return spec
+
+
+@app.command()
 def check_config(configs: list[Path]) -> None:
     """Validate pipeline config layers and the standards file they reference."""
     cfg = _cfg(configs)
