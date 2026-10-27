@@ -163,7 +163,7 @@ Consequences:
 - Point intensities above 45 saturate at 255 (ground p99.9 = 33, so this is rare and mostly
   retroreflective paint).
 
-## 2026-10-26  Step 1.8  Raster adapter: delivered tiles → I1 channels (code; real run pending)
+## 2026-10-26  Step 1.8  Raster adapter: delivered tiles → I1 channels (M1)
 Decision (`roadmark adapt-rasters`, `stage1_raster/raster_adapter.py`):
 - Grid: world-file origin + (½, −½) px (`corner_world_file`). Each tile must then sit on one
   integer pixel lattice, otherwise the run stops (no silent rounding). The output grid is the
@@ -205,6 +205,9 @@ median group, and its tiles rank 1, 2, 25 and 68 of 193 by occupancy.
   on 0.01 %, intensity on 0.31 %.
 - Fixed in the process: pairs whose overlap has no points were scored 0 in `worst_pair`.
   They are now left out (`pairs_with_points`).
-Follow-ups: look at the pilot in QGIS (`runs/pilot_a/stage1/*.tif`) to close the 1.8 adapter
-item and reach M1. Track F's classical score is written against
-`int_mean`, which this delivery lacks: switch it to `int_max`, conditioned on count.
+- Visual QA in QGIS (user, 2026-10-26): passed. Tile seams are invisible and markings are
+  visible in `int_max`. This closes the 1.8 adapter item, and **M1 (preview rasters) is
+  reached** with `pilot_a`.
+Follow-ups: Track C can start annotating on `pilot_a` (vectors, I3); Track F can run on real
+data. Track F's classical score is written against `int_mean`, which this delivery lacks:
+switch it to `int_max`, conditioned on count. Open in 1.8: the 3 vs 6 cm pixel size.

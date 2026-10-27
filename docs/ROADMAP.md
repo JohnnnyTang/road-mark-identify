@@ -110,7 +110,7 @@ annotation sessions, training runs) with D, E or F work on synthetic data.
 | Step | Title | Track | Status |
 |---|---|---|---|
 | 0 | Project setup | – | done |
-| 1 | Data foundation | A (+B for 1.0) | code runs on synthetic data; waiting for real data |
+| 1 | Data foundation | A (+B for 1.0) | M1 reached (pilot_a, raster adapter); pixel size and 1.4–1.7 open |
 | 2 | Guidelines and gold standard | B, C | not started (B can start now) |
 | 3 | Classical reference | F | not started (can start now) |
 | 4 | Segmentation model | E | not started (can start now on synthetic) |
@@ -256,10 +256,10 @@ primary input (DECISIONS 2026-10-26, Step 1.8).
 
 - [x] Raster inventory and cross-check: grid, no-data encoding, registration with the points
       (`roadmark raster-inventory`, `roadmark crosscheck`).
-- [ ] Adapter raster tiles → I1 channels: half-pixel origin fix, overlap mosaic, NaN no-data,
+- [x] Adapter raster tiles → I1 channels: half-pixel origin fix, overlap mosaic, NaN no-data,
       manifest. **This reaches M1.** Code done and exact on synthetic tiles
       (`roadmark adapt-rasters`, `stage1_raster/raster_adapter.py`). Pilot `pilot_a` (2 × 2
-      tiles) has run and its overlaps are identical (DECISIONS). Still open: visual check in QGIS.
+      tiles): overlaps identical, visual check in QGIS passed. **M1 reached.**
 - [ ] Pixel size: 3 cm vs 6 cm aggregation by the sampling no-data rate (1.4).
 - [x] Channel semantics, inferred (`roadmark probe-channels`): density = 5.1 × count (sat. 50),
       intensity = per-pixel max × 255/45 (sat. 45), height not usable (DECISIONS 2026-10-26).
